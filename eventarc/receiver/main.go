@@ -60,7 +60,7 @@ func main() {
 	r.Post("/pub-detail", func(w http.ResponseWriter, r *http.Request) {
 		allHeaders := r.Header
 		jsonizedAllHeaders, _ := json.Marshal(allHeaders)
-		log.Info().RawJSON("json", jsonizedAllHeaders)
+		log.Info().RawJSON("json", jsonizedAllHeaders).Send()
 		render.JSON(w, r, allHeaders)
 
 	})
