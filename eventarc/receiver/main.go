@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"encoding/json"
+
 	chiprometheus "github.com/766b/chi-prometheus"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -48,7 +50,8 @@ func main() {
 
 	r.Post("/pub-detail", func(w http.ResponseWriter, r *http.Request) {
 		allHeaders := r.Header
-		log.Printf("Ce-Subject: %+v\n", allHeaders)
+		jsonizedAllHeaders, _ := json.Marshal(allHeaders)
+		log.Printf("Ce-Subject: %+v\n", string(jsonizedAllHeaders))
 		render.JSON(w, r, allHeaders)
 
 	})
