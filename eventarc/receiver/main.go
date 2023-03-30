@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -37,8 +38,18 @@ func main() {
 
 	r.Post("/pub", func(w http.ResponseWriter, r *http.Request) {
 		subject := r.Header.Get("Ce-Subject")
+		if subject == "" {
+			errorRender(w, r, 500, fmt.Errorf("cannot get Ce-Subject"))
+		}
 		log.Printf("Ce-Subject: %+v\n", subject)
 		render.JSON(w, r, map[string]any{"Ce-Subject": subject})
+
+	})
+
+	r.Post("/pub-detail", func(w http.ResponseWriter, r *http.Request) {
+		allHeaders := r.Header
+		log.Printf("Ce-Subject: %+v\n", allHeaders)
+		render.JSON(w, r, allHeaders)
 
 	})
 
