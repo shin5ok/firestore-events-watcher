@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -15,11 +14,21 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httplog"
 	"github.com/go-chi/render"
+
+	"github.com/rs/zerolog"
+	log "github.com/rs/zerolog/log"
 )
 
 var appName = "myapp"
 
 var servicePort = os.Getenv("PORT")
+
+func init() {
+	log.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
+	zerolog.LevelFieldName = "severity"
+	zerolog.TimestampFieldName = "timestamp"
+	zerolog.TimeFieldFormat = time.RFC3339Nano
+}
 
 func main() {
 
@@ -43,7 +52,7 @@ func main() {
 		if subject == "" {
 			errorRender(w, r, 500, fmt.Errorf("cannot get Ce-Subject"))
 		}
-		log.Printf("Ce-Subject: %+v\n", subject)
+		log.Info().Msgf("Ce-Subject: %+v\n", subject)
 		render.JSON(w, r, map[string]any{"Ce-Subject": subject})
 
 	})
@@ -51,7 +60,7 @@ func main() {
 	r.Post("/pub-detail", func(w http.ResponseWriter, r *http.Request) {
 		allHeaders := r.Header
 		jsonizedAllHeaders, _ := json.Marshal(allHeaders)
-		log.Printf("Ce-Subject: %+v\n", string(jsonizedAllHeaders))
+		log.Info().RawJSON("json", jsonizedAllHeaders)
 		render.JSON(w, r, allHeaders)
 
 	})
