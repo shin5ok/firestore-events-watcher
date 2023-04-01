@@ -3,22 +3,29 @@ package main
 import (
 	"context"
 	"os"
+	"sync"
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 	log "github.com/rs/zerolog/log"
 )
 
-func createRandDoc(ctx context.Context, client *firestore.Client) error {
+func createRandDoc(ctx context.Context, client *firestore.Client, collectionName string) error {
+
 	var data = make(map[string]interface{})
 	id, _ := uuid.NewRandom()
-	data["name"] = id.String()
+	data["name"] = gofakeit.Name()
+	data["SSN"] = gofakeit.SSN()
+
 	_, err := client.Collection(collectionName).Doc(id.String()).Set(ctx, data)
 	if err != nil {
 		log.Error().Msgf("An error has occurred: %s", err)
 	}
+	log.Info().Msgf("id: %s", id.String())
+
 	return err
 }
 
@@ -47,6 +54,19 @@ func main() {
 	if err != nil {
 		log.Error().Err(err)
 	}
-	createRandDoc(ctx, client)
 
+	limit := make(chan struct{}, 5)
+	var wg sync.WaitGroup
+
+	for i := 0; i <= 100; i++ {
+		wg.Add(1)
+		go func() {
+			limit <- struct{}{}
+			defer wg.Done()
+
+			createRandDoc(ctx, client, collectionName)
+			<-limit
+		}()
+	}
+	wg.Wait()
 }
