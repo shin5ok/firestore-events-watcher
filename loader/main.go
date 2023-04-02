@@ -62,7 +62,7 @@ func main() {
 	go WriteToFirestore(ctx, ch, client)
 
 	for v := range ch {
-		fmt.Println(v)
+		fmt.Println("#", v)
 	}
 }
 
@@ -72,7 +72,6 @@ func WriteToFirestore(ctx context.Context, ch chan string, client *firestore.Cli
 	limit := make(chan struct{}, 5)
 	var wg sync.WaitGroup
 
-	// これ自体を go routing化してchをcloseする
 	for i := 0; i <= 10; i++ {
 		wg.Add(1)
 		go func() {
