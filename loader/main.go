@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -13,7 +14,7 @@ import (
 	log "github.com/rs/zerolog/log"
 )
 
-func createRandDoc(ctx context.Context, client *firestore.Client, collectionName string) error {
+func createRandDoc(ctx context.Context, client *firestore.Client, collectionName string, ch chan string) error {
 
 	var data = make(map[string]interface{})
 	id, _ := uuid.NewRandom()
@@ -25,6 +26,8 @@ func createRandDoc(ctx context.Context, client *firestore.Client, collectionName
 		log.Error().Msgf("An error has occurred: %s", err)
 	}
 	log.Info().Msgf("id: %s", id.String())
+
+	ch <- data["SSN"].(string)
 
 	return err
 }
@@ -55,16 +58,28 @@ func main() {
 		log.Error().Err(err)
 	}
 
+	ch := make(chan string)
+	go WriteToFirestore(ctx, ch, client)
+
+	for v := range ch {
+		fmt.Println(v)
+	}
+}
+
+func WriteToFirestore(ctx context.Context, ch chan string, client *firestore.Client) {
+	defer close(ch) // explicit close
+
 	limit := make(chan struct{}, 5)
 	var wg sync.WaitGroup
 
-	for i := 0; i <= 100; i++ {
+	// これ自体を go routing化してchをcloseする
+	for i := 0; i <= 10; i++ {
 		wg.Add(1)
 		go func() {
 			limit <- struct{}{}
 			defer wg.Done()
 
-			createRandDoc(ctx, client, collectionName)
+			createRandDoc(ctx, client, collectionName, ch)
 			<-limit
 		}()
 	}
