@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -34,6 +35,7 @@ func createRandDoc(ctx context.Context, client *firestore.Client, collectionName
 
 var projectID = os.Getenv("PROJECT")
 var collectionName = os.Getenv("COLLECTION")
+var limitConnNumber = os.Getenv("LIMIT")
 
 func init() {
 	log.Logger = zerolog.New(os.Stderr).With().Timestamp().Logger()
@@ -69,17 +71,22 @@ func main() {
 func WriteToFirestore(ctx context.Context, ch chan string, client *firestore.Client) {
 	defer close(ch) // explicit close
 
-	limit := make(chan struct{}, 5)
+	limit, err := strconv.Atoi(limitConnNumber)
+	if err != nil {
+		limit = 5
+	}
+
+	limitQueue := make(chan struct{}, limit)
 	var wg sync.WaitGroup
 
 	for i := 0; i <= 10; i++ {
 		wg.Add(1)
 		go func() {
-			limit <- struct{}{}
+			limitQueue <- struct{}{}
 			defer wg.Done()
 
 			createRandDoc(ctx, client, collectionName, ch)
-			<-limit
+			<-limitQueue
 		}()
 	}
 	wg.Wait()
